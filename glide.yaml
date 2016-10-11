@@ -1,0 +1,9 @@
+package: github.com/mattmac4241/grouper-api
+import:
+- package: github.com/gorilla/mux
+- package: github.com/jinzhu/gorm
+  subpackages:
+  - dialects/postgres
+- package: github.com/joho/godotenv
+- package: github.com/unrolled/render
+- package: github.com/urfave/negroni
