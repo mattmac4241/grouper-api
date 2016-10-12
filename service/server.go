@@ -24,4 +24,10 @@ func initRoutes(mx *mux.Router, formatter *render.Render) {
     mx.HandleFunc("/api/groups", getGroupsHandler(formatter)).Methods("GET")
     mx.HandleFunc("/api/groups", postGroupHandler(formatter)).Methods("POST")
     mx.HandleFunc("/api/groups/{id}", getGroupHandler(formatter)).Methods("GET")
+    mx.HandleFunc("/api/posts", getPostsHandler(formatter)).Methods("GET")
+    mx.HandleFunc("/api/posts", postPostHandler(formatter)).Methods("POST")
+    mx.HandleFunc("/api/posts/{id}", getPostHandler(formatter)).Methods("GET")
+    mx.HandleFunc("/api/comments", getCommentsHandler(formatter)).Methods("GET")
+    mx.HandleFunc("/api/comments", postCommentHandler(formatter)).Methods("POST")
+    mx.HandleFunc("/api/comments/{id}", getCommentHandler(formatter)).Methods("GET")
 }
