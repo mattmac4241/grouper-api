@@ -13,21 +13,21 @@ type Group struct {
 
 //GroupMember many2many for groups
 type GroupMember struct {
-    UserID      int     `json:"user_id"`
-    GroupID     int     `json:"group_id"`
+    UserID      uint     `json:"user_id"`
+    GroupID     uint     `json:"group_id"`
 }
 
 //GroupAdmin denotes who is an admin on a group
 type GroupAdmin struct {
-    UserID      int     `json:"user_id"`
-    GroupID     int     `json:"group_id"`
+    UserID      uint     `json:"user_id"`
+    GroupID     uint     `json:"group_id"`
 }
 
 //Post used for group posts
 type Post struct {
     gorm.Model
-    GroupID     int     `json:"group_id"`
-    UserID      int     `json:"user_id"`
+    GroupID     uint     `json:"group_id"`
+    UserID      uint     `json:"user_id"`
     Content     string  `json:"content";gorm:"type:varchar(500)`
     Title       string  `json:"title"`
 }
@@ -35,8 +35,9 @@ type Post struct {
 //Comment connects to posts
 type Comment struct {
     gorm.Model
-    PostID      int     `json:"post_id"`
+    PostID      uint     `json:"post_id"`
     Content     string  `json:"content";gorm:"type:varchar(500)`
+    UserID      uint    `json:"user_id"`
 }
 
 //Token struct handles authentication

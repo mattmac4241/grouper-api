@@ -6,6 +6,7 @@ import (
     "io/ioutil"
     "encoding/json"
     "time"
+    "strconv"
 
     "github.com/gorilla/mux"
     "github.com/unrolled/render"
@@ -38,6 +39,13 @@ func getGroupHandler(formatter *render.Render) http.HandlerFunc {
 func postGroupHandler(formatter *render.Render) http.HandlerFunc {
     return func(w http.ResponseWriter, req *http.Request) {
         var group Group
+        var member GroupMember
+        var admin GroupAdmin
+
+        key := req.Header.Get("Authorization")
+        user, _ := REDIS.Get(key).Result()
+        userID, _ := strconv.ParseUint(user, 10, 32)
+
         payload, _ := ioutil.ReadAll(req.Body)
         err := json.Unmarshal(payload, &group)
         if err != nil {
@@ -50,6 +58,15 @@ func postGroupHandler(formatter *render.Render) http.HandlerFunc {
             formatter.JSON(w, http.StatusInternalServerError, "Failed to create group.")
             return
         }
+
+        member.GroupID = group.ID
+        admin.GroupID = group.ID
+        member.UserID = uint(userID)
+        admin.UserID = uint(userID)
+
+        DB.Create(&member)
+        DB.Create(&admin)
+
         formatter.JSON(w, http.StatusCreated, "Group succesfully created.")
     }
 }
@@ -57,12 +74,17 @@ func postGroupHandler(formatter *render.Render) http.HandlerFunc {
 func postPostHandler(formatter *render.Render) http.HandlerFunc {
     return func(w http.ResponseWriter, req *http.Request) {
         var post Post
+        key := req.Header.Get("Authorization")
+        user, _ := REDIS.Get(key).Result()
+        userID, _ := strconv.ParseUint(user, 10, 32)
+
         payload, _ := ioutil.ReadAll(req.Body)
         err := json.Unmarshal(payload, &post)
         if err != nil {
             formatter.Text(w, http.StatusBadRequest, "Failed to parse post.")
             return
         }
+        post.UserID = uint(userID)
         err = DB.Create(&post).Error
         if err != nil {
             formatter.JSON(w, http.StatusInternalServerError, "Failed to create post.")
@@ -121,12 +143,16 @@ func getCommentHandler(formatter *render.Render) http.HandlerFunc {
 func postCommentHandler(formatter *render.Render) http.HandlerFunc {
     return func(w http.ResponseWriter, req *http.Request) {
         var comment Comment
+        key := req.Header.Get("Authorization")
+        user, _ := REDIS.Get(key).Result()
+        userID, _ := strconv.ParseUint(user, 10, 32)
         payload, _ := ioutil.ReadAll(req.Body)
         err := json.Unmarshal(payload, &comment)
         if err != nil {
             formatter.Text(w, http.StatusBadRequest, "Failed to parse comment.")
             return
         }
+        comment.UserID = uint(userID)
         err = DB.Create(&comment).Error
         if err != nil {
             formatter.JSON(w, http.StatusInternalServerError, "Failed to create comment.")
