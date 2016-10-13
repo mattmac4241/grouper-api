@@ -148,8 +148,6 @@ func checkTokenHandler(w http.ResponseWriter, req *http.Request, next http.Handl
     }
 
     _, err := REDIS.Get(key).Result()
-    fmt.Println("ERROR ")
-    fmt.Println(err)
     if err != nil {
         // if the token is not in redis get it and then set it
         token, err := serviceClient.getUserIDFromToken(key)
