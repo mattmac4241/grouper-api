@@ -1,9 +1,11 @@
 package service
 
 import (
+    "fmt"
     "net/http"
     "io/ioutil"
     "encoding/json"
+    "time"
 
     "github.com/gorilla/mux"
     "github.com/unrolled/render"
@@ -11,8 +13,10 @@ import (
 
 func getGroupsHandler(formatter *render.Render) http.HandlerFunc {
     return func(w http.ResponseWriter, req *http.Request) {
+        fmt.Println("CALLED")
         groups := []Group{}
         DB.Find(&groups)
+        fmt.Println(req.Body)
         formatter.JSON(w, http.StatusOK, groups)
     }
 }
@@ -130,4 +134,32 @@ func postCommentHandler(formatter *render.Render) http.HandlerFunc {
         }
         formatter.JSON(w, http.StatusCreated, "Comment succesfully created.")
     }
+}
+
+func checkTokenHandler(w http.ResponseWriter, req *http.Request, next http.HandlerFunc) {
+    serviceClient := authtWebClient{
+		rootURL: "http://localhost:3001/auth/token",
+	}
+    key := req.Header.Get("Authorization")
+    w.Header().Set("Content-Type", "application/json")
+    if key == "" {
+        http.Error(w, "Failed to find token", http.StatusInternalServerError)
+        return
+    }
+
+    _, err := REDIS.Get(key).Result()
+    fmt.Println("ERROR ")
+    fmt.Println(err)
+    if err != nil {
+        // if the token is not in redis get it and then set it
+        token, err := serviceClient.getUserIDFromToken(key)
+        if err != nil {
+            http.Error(w, err.Error(), http.StatusInternalServerError)
+            return
+        }
+        now := time.Now().Unix()
+        seconds := time.Second * time.Duration(token.ExpiresAt - now)
+        REDIS.Set(token.Key, token.UserID, seconds)
+    }
+    next(w, req)
 }

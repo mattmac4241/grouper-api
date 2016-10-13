@@ -38,3 +38,10 @@ type Comment struct {
     PostID      int     `json:"post_id"`
     Content     string  `json:"content";gorm:"type:varchar(500)`
 }
+
+//Token struct handles authentication
+type Token struct {
+    Key         string   `json:"token"`
+    UserID      uint     `json:"user_id"`
+    ExpiresAt   int64    `json:"expires_at"`
+}

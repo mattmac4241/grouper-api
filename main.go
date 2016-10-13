@@ -21,8 +21,12 @@ func main() {
     user := os.Getenv("DBUSER")
     password := os.Getenv("DBPASSWORD")
     host := os.Getenv("DBHOST")
+	redisAddress := os.Getenv("REDIS_ADDRESS")
+
+	service.REDIS, _ = service.InitRedisClient(redisAddress, "")
 	service.DB = service.InitDatabase(host, user, dbname, password)
 	defer service.CloseDatabase()
+	defer service.REDIS.Close()
 
 	createPTR := flag.Bool("create", false, "creates the models")
 	migratePTR := flag.Bool("migrate", false, "migrates the models")
@@ -46,8 +50,6 @@ func main() {
 	if len(port) == 0 {
 		port = "3000"
 	}
-
-
 
 	server := service.NewServer()
 	server.Run(":" + port)

@@ -12,7 +12,9 @@ func NewServer() *negroni.Negroni {
         IndentJSON: true,
     })
 
+
     n := negroni.Classic()
+    n.Use(negroni.HandlerFunc(checkTokenHandler))
     mx := mux.NewRouter()
 
     initRoutes(mx, formatter)
