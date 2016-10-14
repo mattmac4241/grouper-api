@@ -110,8 +110,9 @@ func getPostHandler(formatter *render.Render) http.HandlerFunc {
 
 func getPostsHandler(formatter *render.Render) http.HandlerFunc {
     return func(w http.ResponseWriter, req *http.Request) {
+        groups := req.URL.Query()["group"]
         posts := []Post{}
-        err := DB.Find(&posts).Error
+        err := DB.Where("group_id in (?)", groups).Find(&posts)
         if err != nil {
             formatter.JSON(w, http.StatusNotFound, "Failed to find post")
         }
