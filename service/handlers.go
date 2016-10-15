@@ -1,7 +1,6 @@
 package service
 
 import (
-    "fmt"
     "net/http"
     "io/ioutil"
     "encoding/json"
@@ -12,22 +11,22 @@ import (
     "github.com/unrolled/render"
 )
 
-func getGroupsHandler(formatter *render.Render) http.HandlerFunc {
+func getGroupsHandler(formatter *render.Render, repo repository) http.HandlerFunc {
     return func(w http.ResponseWriter, req *http.Request) {
-        fmt.Println("CALLED")
-        groups := []Group{}
-        DB.Find(&groups)
-        fmt.Println(req.Body)
+        groups, err := repo.getGroups()
+        if err != nil {
+            formatter.JSON(w, http.StatusInternalServerError, "Failed to create group")
+            return
+        }
         formatter.JSON(w, http.StatusOK, groups)
     }
 }
 
-func getGroupHandler(formatter *render.Render) http.HandlerFunc {
+func getGroupHandler(formatter *render.Render, repo repository) http.HandlerFunc {
     return func(w http.ResponseWriter, req *http.Request) {
         vars := mux.Vars(req)
         id := vars["id"]
-        group := Group{}
-        err := DB.Find(&group, id).Error
+        group, err := repo.getGroup(id)
         if err != nil {
             formatter.JSON(w, http.StatusFound, "Group not found")
             return
@@ -36,56 +35,64 @@ func getGroupHandler(formatter *render.Render) http.HandlerFunc {
     }
 }
 
-func postGroupHandler(formatter *render.Render) http.HandlerFunc {
+func postGroupHandler(formatter *render.Render, repo repository) http.HandlerFunc {
     return func(w http.ResponseWriter, req *http.Request) {
         var group Group
-        var member GroupMember
-        var admin GroupAdmin
 
         key := req.Header.Get("Authorization")
-        user, _ := REDIS.Get(key).Result()
+        user, err := repo.redisGetValue(key)
+        if err != nil {
+            formatter.JSON(w, http.StatusInternalServerError, "Failed to get user from token.")
+            return
+        }
         userID, _ := strconv.ParseUint(user, 10, 32)
 
         payload, _ := ioutil.ReadAll(req.Body)
-        err := json.Unmarshal(payload, &group)
+        err = json.Unmarshal(payload, &group)
         if err != nil {
-            formatter.Text(w, http.StatusBadRequest, "Failed to parse add group command.")
+            formatter.JSON(w, http.StatusBadRequest, "Failed to parse add group command.")
             return
         }
 
-        err = DB.Create(&group).Error
+        err = repo.addGroup(group)
         if err != nil {
             formatter.JSON(w, http.StatusInternalServerError, "Failed to create group.")
             return
         }
+        err = repo.addGroupMember(group.ID, uint(userID))
+        if err != nil {
+            formatter.JSON(w, http.StatusInternalServerError, "Failed to join group.")
+            return
+        }
 
-        member.GroupID = group.ID
-        admin.GroupID = group.ID
-        member.UserID = uint(userID)
-        admin.UserID = uint(userID)
-
-        DB.Create(&member)
-        DB.Create(&admin)
-
+        err = repo.addGroupAdmin(group.ID, uint(userID))
+        if err != nil {
+            formatter.JSON(w, http.StatusInternalServerError, "Failed to join admin of group.")
+            return
+        }
         formatter.JSON(w, http.StatusCreated, "Group succesfully created.")
     }
 }
 
-func postPostHandler(formatter *render.Render) http.HandlerFunc {
+func postPostHandler(formatter *render.Render, repo repository) http.HandlerFunc {
     return func(w http.ResponseWriter, req *http.Request) {
         var post Post
         key := req.Header.Get("Authorization")
-        user, _ := REDIS.Get(key).Result()
+        user, err := repo.redisGetValue(key)
+        if err != nil {
+            formatter.JSON(w, http.StatusInternalServerError, "Failed to get user from token.")
+            return
+        }
         userID, _ := strconv.ParseUint(user, 10, 32)
 
         payload, _ := ioutil.ReadAll(req.Body)
-        err := json.Unmarshal(payload, &post)
+        err = json.Unmarshal(payload, &post)
         if err != nil {
-            formatter.Text(w, http.StatusBadRequest, "Failed to parse post.")
+            formatter.JSON(w, http.StatusBadRequest, "Failed to parse post.")
             return
         }
         post.UserID = uint(userID)
-        err = DB.Create(&post).Error
+        err = repo.addPost(post)
         if err != nil {
             formatter.JSON(w, http.StatusInternalServerError, "Failed to create post.")
             return
@@ -94,12 +101,11 @@ func postPostHandler(formatter *render.Render) http.HandlerFunc {
     }
 }
 
-func getPostHandler(formatter *render.Render) http.HandlerFunc {
+func getPostHandler(formatter *render.Render, repo repository) http.HandlerFunc {
     return func(w http.ResponseWriter, req *http.Request) {
         vars := mux.Vars(req)
         id := vars["id"]
-        post := Post{}
-        err := DB.Find(&post, id).Error
+        post, err := repo.getPost(id)
         if err != nil {
             formatter.JSON(w, http.StatusNotFound, "Post not found")
             return
@@ -108,32 +114,33 @@ func getPostHandler(formatter *render.Render) http.HandlerFunc {
     }
 }
 
-func getPostsHandler(formatter *render.Render) http.HandlerFunc {
+func getPostsHandler(formatter *render.Render, repo repository) http.HandlerFunc {
     return func(w http.ResponseWriter, req *http.Request) {
         groups := req.URL.Query()["group"]
-        posts := []Post{}
-        err := DB.Where("group_id in (?)", groups).Find(&posts)
+        posts, err := repo.getPostsByGroup(groups)
         if err != nil {
-            formatter.JSON(w, http.StatusNotFound, "Failed to find post")
+            formatter.JSON(w, http.StatusNotFound, "Failed to find posts")
         }
         formatter.JSON(w, http.StatusFound, posts)
     }
 }
 
-func getCommentsHandler(formatter *render.Render) http.HandlerFunc {
+func getCommentsHandler(formatter *render.Render, repo repository) http.HandlerFunc {
     return func(w http.ResponseWriter, req *http.Request) {
-        comments := []Comment{}
-        DB.Find(&comments)
+        posts := req.URL.Query()["post"]
+        comments, err := repo.getCommentsByPost(posts)
+        if err != nil {
+            formatter.JSON(w, http.StatusNotFound, "Failed to find comments")
+        }
         formatter.JSON(w, http.StatusFound, comments)
     }
 }
 
-func getCommentHandler(formatter *render.Render) http.HandlerFunc {
+func getCommentHandler(formatter *render.Render, repo repository) http.HandlerFunc {
     return func(w http.ResponseWriter, req *http.Request) {
-        comment := Comment{}
         vars := mux.Vars(req)
         id := vars["id"]
-        err := DB.Find(&comment, id).Error
+        comment, err := repo.getComment(id)
         if err != nil {
             formatter.JSON(w, http.StatusNotFound, "Failed to find comment")
         }
@@ -141,20 +148,24 @@ func getCommentHandler(formatter *render.Render) http.HandlerFunc {
     }
 }
 
-func postCommentHandler(formatter *render.Render) http.HandlerFunc {
+func postCommentHandler(formatter *render.Render, repo repository) http.HandlerFunc {
     return func(w http.ResponseWriter, req *http.Request) {
         var comment Comment
         key := req.Header.Get("Authorization")
-        user, _ := REDIS.Get(key).Result()
+        user, err := repo.redisGetValue(key)
+        if err != nil {
+            formatter.JSON(w, http.StatusInternalServerError, "Failed to get user from token.")
+            return
+        }
         userID, _ := strconv.ParseUint(user, 10, 32)
         payload, _ := ioutil.ReadAll(req.Body)
-        err := json.Unmarshal(payload, &comment)
+        err = json.Unmarshal(payload, &comment)
         if err != nil {
             formatter.Text(w, http.StatusBadRequest, "Failed to parse comment.")
             return
         }
         comment.UserID = uint(userID)
-        err = DB.Create(&comment).Error
+        err = repo.addComment(comment)
         if err != nil {
             formatter.JSON(w, http.StatusInternalServerError, "Failed to create comment.")
             return
@@ -184,7 +195,7 @@ func checkTokenHandler(w http.ResponseWriter, req *http.Request, next http.Handl
         }
         now := time.Now().Unix()
         seconds := time.Second * time.Duration(token.ExpiresAt - now)
-        REDIS.Set(token.Key, token.UserID, seconds)
+        REDIS.Set(token.Key, string(token.UserID), seconds)
     }
     next(w, req)
 }

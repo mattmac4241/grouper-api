@@ -16,20 +16,20 @@ func NewServer() *negroni.Negroni {
     n := negroni.Classic()
     n.Use(negroni.HandlerFunc(checkTokenHandler))
     mx := mux.NewRouter()
-
-    initRoutes(mx, formatter)
+    repo := &repoHandler{}
+    initRoutes(mx, formatter, repo)
     n.UseHandler(mx)
     return n
 }
 
-func initRoutes(mx *mux.Router, formatter *render.Render) {
-    mx.HandleFunc("/api/groups", getGroupsHandler(formatter)).Methods("GET")
-    mx.HandleFunc("/api/groups", postGroupHandler(formatter)).Methods("POST")
-    mx.HandleFunc("/api/groups/{id}", getGroupHandler(formatter)).Methods("GET")
-    mx.HandleFunc("/api/posts", getPostsHandler(formatter)).Methods("GET")
-    mx.HandleFunc("/api/posts", postPostHandler(formatter)).Methods("POST")
-    mx.HandleFunc("/api/posts/{id}", getPostHandler(formatter)).Methods("GET")
-    mx.HandleFunc("/api/comments", getCommentsHandler(formatter)).Methods("GET")
-    mx.HandleFunc("/api/comments", postCommentHandler(formatter)).Methods("POST")
-    mx.HandleFunc("/api/comments/{id}", getCommentHandler(formatter)).Methods("GET")
+func initRoutes(mx *mux.Router, formatter *render.Render, repo repository) {
+    mx.HandleFunc("/api/groups", getGroupsHandler(formatter, repo)).Methods("GET")
+    mx.HandleFunc("/api/groups", postGroupHandler(formatter, repo)).Methods("POST")
+    mx.HandleFunc("/api/groups/{id}", getGroupHandler(formatter, repo)).Methods("GET")
+    mx.HandleFunc("/api/posts", getPostsHandler(formatter, repo)).Methods("GET")
+    mx.HandleFunc("/api/posts", postPostHandler(formatter, repo)).Methods("POST")
+    mx.HandleFunc("/api/posts/{id}", getPostHandler(formatter, repo)).Methods("GET")
+    mx.HandleFunc("/api/comments", getCommentsHandler(formatter, repo)).Methods("GET")
+    mx.HandleFunc("/api/comments", postCommentHandler(formatter, repo)).Methods("POST")
+    mx.HandleFunc("/api/comments/{id}", getCommentHandler(formatter, repo)).Methods("GET")
 }
