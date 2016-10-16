@@ -4,6 +4,7 @@ import (
     "net/http"
     "io/ioutil"
     "encoding/json"
+    "os"
     "time"
     "strconv"
 
@@ -182,7 +183,7 @@ func postCommentHandler(formatter *render.Render, repo repository) http.HandlerF
 
 func checkTokenHandler(w http.ResponseWriter, req *http.Request, next http.HandlerFunc) {
     serviceClient := authtWebClient{
-		rootURL: "http://localhost:3001/auth/token",
+		rootURL: os.Getenv("AUTH_URL"),
 	}
     key := req.Header.Get("Authorization")
     w.Header().Set("Content-Type", "application/json")
