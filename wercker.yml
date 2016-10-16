@@ -1,9 +1,5 @@
 box: golang
 
-services:
-    - postgres
-    - reids
-
 dev:
   steps:
     - setup-go-workspace:
