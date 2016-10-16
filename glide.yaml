@@ -7,3 +7,4 @@ import:
 - package: github.com/joho/godotenv
 - package: github.com/unrolled/render
 - package: github.com/urfave/negroni
+- package: gopkg.in/redis.v4

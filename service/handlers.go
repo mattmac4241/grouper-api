@@ -15,7 +15,7 @@ func getGroupsHandler(formatter *render.Render, repo repository) http.HandlerFun
     return func(w http.ResponseWriter, req *http.Request) {
         groups, err := repo.getGroups()
         if err != nil {
-            formatter.JSON(w, http.StatusInternalServerError, "Failed to create group")
+            formatter.JSON(w, http.StatusInternalServerError, "Failed to get groups")
             return
         }
         formatter.JSON(w, http.StatusOK, groups)
@@ -28,7 +28,7 @@ func getGroupHandler(formatter *render.Render, repo repository) http.HandlerFunc
         id := vars["id"]
         group, err := repo.getGroup(id)
         if err != nil {
-            formatter.JSON(w, http.StatusFound, "Group not found")
+            formatter.JSON(w, http.StatusNotFound, "Group not found")
             return
         }
         formatter.JSON(w, http.StatusOK, group)
@@ -39,17 +39,9 @@ func postGroupHandler(formatter *render.Render, repo repository) http.HandlerFun
     return func(w http.ResponseWriter, req *http.Request) {
         var group Group
 
-        key := req.Header.Get("Authorization")
-        user, err := repo.redisGetValue(key)
-        if err != nil {
-            formatter.JSON(w, http.StatusInternalServerError, "Failed to get user from token.")
-            return
-        }
-        userID, _ := strconv.ParseUint(user, 10, 32)
-
         payload, _ := ioutil.ReadAll(req.Body)
-        err = json.Unmarshal(payload, &group)
-        if err != nil {
+        err := json.Unmarshal(payload, &group)
+        if err != nil || (group == Group{}) {
             formatter.JSON(w, http.StatusBadRequest, "Failed to parse add group command.")
             return
         }
@@ -59,6 +51,16 @@ func postGroupHandler(formatter *render.Render, repo repository) http.HandlerFun
             formatter.JSON(w, http.StatusInternalServerError, "Failed to create group.")
             return
         }
+
+        key := req.Header.Get("Authorization")
+        user, err := repo.redisGetValue(key)
+        if err != nil {
+            formatter.JSON(w, http.StatusInternalServerError, "Failed to get user from token.")
+            return
+        }
+
+        userID, _ := strconv.ParseUint(user, 10, 32)
+
         err = repo.addGroupMember(group.ID, uint(userID))
         if err != nil {
             formatter.JSON(w, http.StatusInternalServerError, "Failed to join group.")
@@ -77,6 +79,14 @@ func postGroupHandler(formatter *render.Render, repo repository) http.HandlerFun
 func postPostHandler(formatter *render.Render, repo repository) http.HandlerFunc {
     return func(w http.ResponseWriter, req *http.Request) {
         var post Post
+
+        payload, _ := ioutil.ReadAll(req.Body)
+        err := json.Unmarshal(payload, &post)
+        if err != nil || (post == Post{}) {
+            formatter.JSON(w, http.StatusBadRequest, "Failed to parse post.")
+            return
+        }
+
         key := req.Header.Get("Authorization")
         user, err := repo.redisGetValue(key)
         if err != nil {
@@ -85,12 +95,6 @@ func postPostHandler(formatter *render.Render, repo repository) http.HandlerFunc
         }
         userID, _ := strconv.ParseUint(user, 10, 32)
 
-        payload, _ := ioutil.ReadAll(req.Body)
-        err = json.Unmarshal(payload, &post)
-        if err != nil {
-            formatter.JSON(w, http.StatusBadRequest, "Failed to parse post.")
-            return
-        }
         post.UserID = uint(userID)
         err = repo.addPost(post)
         if err != nil {
@@ -110,7 +114,7 @@ func getPostHandler(formatter *render.Render, repo repository) http.HandlerFunc 
             formatter.JSON(w, http.StatusNotFound, "Post not found")
             return
         }
-        formatter.JSON(w, http.StatusFound, post)
+        formatter.JSON(w, http.StatusOK, post)
     }
 }
 
@@ -121,7 +125,7 @@ func getPostsHandler(formatter *render.Render, repo repository) http.HandlerFunc
         if err != nil {
             formatter.JSON(w, http.StatusNotFound, "Failed to find posts")
         }
-        formatter.JSON(w, http.StatusFound, posts)
+        formatter.JSON(w, http.StatusOK, posts)
     }
 }
 
@@ -132,7 +136,7 @@ func getCommentsHandler(formatter *render.Render, repo repository) http.HandlerF
         if err != nil {
             formatter.JSON(w, http.StatusNotFound, "Failed to find comments")
         }
-        formatter.JSON(w, http.StatusFound, comments)
+        formatter.JSON(w, http.StatusOK, comments)
     }
 }
 
@@ -144,13 +148,21 @@ func getCommentHandler(formatter *render.Render, repo repository) http.HandlerFu
         if err != nil {
             formatter.JSON(w, http.StatusNotFound, "Failed to find comment")
         }
-        formatter.JSON(w, http.StatusFound, comment)
+        formatter.JSON(w, http.StatusOK, comment)
     }
 }
 
 func postCommentHandler(formatter *render.Render, repo repository) http.HandlerFunc {
     return func(w http.ResponseWriter, req *http.Request) {
         var comment Comment
+
+        payload, _ := ioutil.ReadAll(req.Body)
+        err := json.Unmarshal(payload, &comment)
+        if err != nil ||( comment == Comment{}) {
+            formatter.Text(w, http.StatusBadRequest, "Failed to parse comment.")
+            return
+        }
+
         key := req.Header.Get("Authorization")
         user, err := repo.redisGetValue(key)
         if err != nil {
@@ -158,12 +170,6 @@ func postCommentHandler(formatter *render.Render, repo repository) http.HandlerF
             return
         }
         userID, _ := strconv.ParseUint(user, 10, 32)
-        payload, _ := ioutil.ReadAll(req.Body)
-        err = json.Unmarshal(payload, &comment)
-        if err != nil {
-            formatter.Text(w, http.StatusBadRequest, "Failed to parse comment.")
-            return
-        }
         comment.UserID = uint(userID)
         err = repo.addComment(comment)
         if err != nil {
