@@ -46,3 +46,8 @@ type Token struct {
     UserID      uint     `json:"user_id"`
     ExpiresAt   int64    `json:"expires_at"`
 }
+
+type Service struct {
+    Name        string      `json:"name"`
+    URL         string      `json:"url"`
+}

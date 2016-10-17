@@ -28,10 +28,30 @@ func main() {
 	defer service.CloseDatabase()
 	defer service.REDIS.Close()
 
+	handleFlags()
+
+	port := os.Getenv("PORT")
+	if len(port) == 0 {
+		port = "3000"
+	}
+	publish()
+	server := service.NewServer()
+	server.Run(":" + port)
+}
+
+func publish() {
+	serviceClient := service.CatalogWebClient{
+        RootURL: os.Getenv("PUBLISH_URL"),
+    }
+	serviceClient.PublishService()
+}
+
+
+func handleFlags() {
 	createPTR := flag.Bool("create", false, "creates the models")
 	migratePTR := flag.Bool("migrate", false, "migrates the models")
 	deletePTR := flag.Bool("delete", false, "deletes the models")
-    flag.Parse()
+	flag.Parse()
 
 	if *deletePTR == true {
 		fmt.Println("DELETE MODELS")
@@ -45,12 +65,4 @@ func main() {
 		fmt.Println("MIGRATE MODELS")
 		service.MigrateModels()
 	}
-
-	port := os.Getenv("PORT")
-	if len(port) == 0 {
-		port = "3000"
-	}
-
-	server := service.NewServer()
-	server.Run(":" + port)
 }

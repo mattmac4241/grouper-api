@@ -24,7 +24,6 @@ func NewServer() *negroni.Negroni {
         ))
     initRoutesWithoutAuth(mux, formatter)
     n.UseHandler(mux)
-
     return n
 }
 
