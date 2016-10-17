@@ -14,22 +14,32 @@ func NewServer() *negroni.Negroni {
 
 
     n := negroni.Classic()
-    n.Use(negroni.HandlerFunc(checkTokenHandler))
-    mx := mux.NewRouter()
+    api := mux.NewRouter()
+    mux := mux.NewRouter()
     repo := &repoHandler{}
-    initRoutes(mx, formatter, repo)
-    n.UseHandler(mx)
+    initRoutes(api, formatter, repo)
+    mux.Handle("/api", negroni.New(
+                NewMiddleware(),
+                negroni.Wrap(api),
+        ))
+    initRoutesWithoutAuth(mux, formatter)
+    n.UseHandler(mux)
+
     return n
 }
 
 func initRoutes(mx *mux.Router, formatter *render.Render, repo repository) {
-    mx.HandleFunc("/api/groups", getGroupsHandler(formatter, repo)).Methods("GET")
-    mx.HandleFunc("/api/groups", postGroupHandler(formatter, repo)).Methods("POST")
-    mx.HandleFunc("/api/groups/{id}", getGroupHandler(formatter, repo)).Methods("GET")
-    mx.HandleFunc("/api/posts", getPostsHandler(formatter, repo)).Methods("GET")
-    mx.HandleFunc("/api/posts", postPostHandler(formatter, repo)).Methods("POST")
-    mx.HandleFunc("/api/posts/{id}", getPostHandler(formatter, repo)).Methods("GET")
-    mx.HandleFunc("/api/comments", getCommentsHandler(formatter, repo)).Methods("GET")
-    mx.HandleFunc("/api/comments", postCommentHandler(formatter, repo)).Methods("POST")
-    mx.HandleFunc("/api/comments/{id}", getCommentHandler(formatter, repo)).Methods("GET")
+    mx.HandleFunc("/groups", getGroupsHandler(formatter, repo)).Methods("GET")
+    mx.HandleFunc("/groups", postGroupHandler(formatter, repo)).Methods("POST")
+    mx.HandleFunc("/groups/{id}", getGroupHandler(formatter, repo)).Methods("GET")
+    mx.HandleFunc("/posts", getPostsHandler(formatter, repo)).Methods("GET")
+    mx.HandleFunc("/posts", postPostHandler(formatter, repo)).Methods("POST")
+    mx.HandleFunc("/posts/{id}", getPostHandler(formatter, repo)).Methods("GET")
+    mx.HandleFunc("/comments", getCommentsHandler(formatter, repo)).Methods("GET")
+    mx.HandleFunc("/comments", postCommentHandler(formatter, repo)).Methods("POST")
+    mx.HandleFunc("/comments/{id}", getCommentHandler(formatter, repo)).Methods("GET")
+}
+
+func initRoutesWithoutAuth(mx *mux.Router, formatter *render.Render) {
+    mx.HandleFunc("/ping", getPingHandler(formatter)).Methods("GET")
 }

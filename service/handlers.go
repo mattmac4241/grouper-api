@@ -4,8 +4,6 @@ import (
     "net/http"
     "io/ioutil"
     "encoding/json"
-    "os"
-    "time"
     "strconv"
 
     "github.com/gorilla/mux"
@@ -181,28 +179,8 @@ func postCommentHandler(formatter *render.Render, repo repository) http.HandlerF
     }
 }
 
-func checkTokenHandler(w http.ResponseWriter, req *http.Request, next http.HandlerFunc) {
-    serviceClient := authtWebClient{
-		rootURL: os.Getenv("AUTH_URL"),
-	}
-    key := req.Header.Get("Authorization")
-    w.Header().Set("Content-Type", "application/json")
-    if key == "" {
-        http.Error(w, "Failed to find token", http.StatusInternalServerError)
-        return
+func getPingHandler(formatter *render.Render) http.HandlerFunc {
+    return func(w http.ResponseWriter, req *http.Request) {
+        formatter.JSON(w, http.StatusOK, "PING!")
     }
-
-    _, err := REDIS.Get(key).Result()
-    if err != nil {
-        // if the token is not in redis get it and then set it
-        token, err := serviceClient.getUserIDFromToken(key)
-        if err != nil {
-            http.Error(w, err.Error(), http.StatusInternalServerError)
-            return
-        }
-        now := time.Now().Unix()
-        seconds := time.Second * time.Duration(token.ExpiresAt - now)
-        REDIS.Set(token.Key, string(token.UserID), seconds)
-    }
-    next(w, req)
 }
