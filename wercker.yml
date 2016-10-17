@@ -2,7 +2,6 @@ box: golang
 
 services:
     - redis
-    - 
 
 
 dev:
