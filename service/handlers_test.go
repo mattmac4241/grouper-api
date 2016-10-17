@@ -11,6 +11,7 @@ import (
     "strconv"
     "time"
 
+
     "github.com/unrolled/render"
     "github.com/urfave/negroni"
     "github.com/gorilla/mux"
@@ -183,9 +184,8 @@ func TestGetGroupHandlerNotValidGroup(t *testing.T) {
     server := MakeTestServer(repo)
 
     recorder = httptest.NewRecorder()
-    request, _ = http.NewRequest("GET", "/api/groups/1", nil)
+    request, _ = http.NewRequest("GET", "/groups/1", nil)
     server.ServeHTTP(recorder, request)
-
     if recorder.Code != http.StatusNotFound {
         t.Errorf("Expected %v; received %v", http.StatusNotFound, recorder.Code)
     }
@@ -205,10 +205,9 @@ func TestGetGroupHandlerValidGroup(t *testing.T) {
     server := MakeTestServer(repo)
 
     recorder = httptest.NewRecorder()
-    request, _ = http.NewRequest("GET", "/api/groups/1", nil)
+    request, _ = http.NewRequest("GET", "/groups/1", nil)
     server.ServeHTTP(recorder, request)
-
-    if recorder.Code == http.StatusNotFound {
+    if recorder.Code != http.StatusOK {
         t.Errorf("Expected %v; received %v", http.StatusOK, recorder.Code)
     }
 
@@ -390,7 +389,7 @@ func TestGetPostHandlerNoPosts(t *testing.T) {
     server := MakeTestServer(repo)
 
     recorder = httptest.NewRecorder()
-    request, _ = http.NewRequest("GET", "/api/posts/1", nil)
+    request, _ = http.NewRequest("GET", "/posts/1", nil)
     server.ServeHTTP(recorder, request)
 
     if recorder.Code != http.StatusNotFound {
@@ -411,7 +410,7 @@ func TestGetPostHandlerSuccess(t *testing.T) {
     server := MakeTestServer(repo)
 
     recorder = httptest.NewRecorder()
-    request, _ = http.NewRequest("GET", "/api/posts/1", nil)
+    request, _ = http.NewRequest("GET", "/posts/1", nil)
     server.ServeHTTP(recorder, request)
 
     if recorder.Code != http.StatusOK {
@@ -439,7 +438,7 @@ func TestGetPostsHandlerNoGroup(t *testing.T) {
     server := MakeTestServer(repo)
 
     recorder = httptest.NewRecorder()
-    request, _ = http.NewRequest("GET", "/api/posts?group=1", nil)
+    request, _ = http.NewRequest("GET", "/posts?group=1", nil)
     server.ServeHTTP(recorder, request)
 
     if recorder.Code != http.StatusOK {
@@ -471,7 +470,7 @@ func TestGetPostsHandlerGroupSuccess(t *testing.T) {
     server := MakeTestServer(repo)
 
     recorder = httptest.NewRecorder()
-    request, _ = http.NewRequest("GET", "/api/posts?group=1", nil)
+    request, _ = http.NewRequest("GET", "/posts?group=1", nil)
     server.ServeHTTP(recorder, request)
 
     if recorder.Code != http.StatusOK {
@@ -499,7 +498,7 @@ func TestGetCommentsHandlerNoComments(t *testing.T) {
     server := MakeTestServer(repo)
 
     recorder = httptest.NewRecorder()
-    request, _ = http.NewRequest("GET", "/api/posts?group=1", nil)
+    request, _ = http.NewRequest("GET", "/posts?group=1", nil)
     server.ServeHTTP(recorder, request)
 
     if recorder.Code != http.StatusOK {
@@ -532,7 +531,7 @@ func TestGetCommentsHandlerWithComments(t *testing.T) {
     server := MakeTestServer(repo)
 
     recorder = httptest.NewRecorder()
-    request, _ = http.NewRequest("GET", "/api/comments?post=1", nil)
+    request, _ = http.NewRequest("GET", "/comments?post=1", nil)
     server.ServeHTTP(recorder, request)
 
     if recorder.Code != http.StatusOK {
@@ -559,7 +558,7 @@ func TestGetCommentHandlerNoComment(t *testing.T) {
     server := MakeTestServer(repo)
 
     recorder = httptest.NewRecorder()
-    request, _ = http.NewRequest("GET", "/api/comments/1", nil)
+    request, _ = http.NewRequest("GET", "/comments/1", nil)
     server.ServeHTTP(recorder, request)
 
     if recorder.Code != http.StatusNotFound {
@@ -580,7 +579,7 @@ func TestGetCommentHandlerSuccess(t *testing.T) {
     server := MakeTestServer(repo)
 
     recorder = httptest.NewRecorder()
-    request, _ = http.NewRequest("GET", "/api/comments/1", nil)
+    request, _ = http.NewRequest("GET", "/comments/1", nil)
     server.ServeHTTP(recorder, request)
 
     if recorder.Code != http.StatusOK {

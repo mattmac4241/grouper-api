@@ -14,11 +14,11 @@ func NewServer() *negroni.Negroni {
 
 
     n := negroni.Classic()
-    api := mux.NewRouter()
+    api := mux.NewRouter().PathPrefix("/api").Subrouter().StrictSlash(true)
     mux := mux.NewRouter()
     repo := &repoHandler{}
     initRoutes(api, formatter, repo)
-    mux.Handle("/api", negroni.New(
+    mux.PathPrefix("/api").Handler(negroni.New(
                 NewMiddleware(),
                 negroni.Wrap(api),
         ))
